@@ -66,14 +66,19 @@ ln -sf /usr/local/bin/vault /usr/bin/vault
 #   /opt/vault/tls/vault-ca.pem      CA pública
 #   /opt/vault/tls/vault-cert.pem    certificado de este nodo
 #   /opt/vault/tls/vault-key.pem     clave privada de este nodo
-# El certificado debe llevar en SAN la IP privada (<private-ip>), la IP pública
-# (<public-ip>) y 127.0.0.1 (para vault operator desde localhost).
+# El certificado (SAN) debe incluir, como mínimo:
+#   - 127.0.0.1          (vault operator / CLI en localhost)
+#   - FQDN de este host  (<host-fqdn>)
+#   - FQDN del balanceador / VIP (<lb-fqdn>)
+# Los clientes se conectan por nombre, no por IP. Incluir IPs en el SAN solo
+# tiene sentido en un laboratorio sin DNS.
 # La clave privada de la CA no se copia al servidor.
 #
 # PoC: si el cliente aún no entrega certificados, sirve una CA de laboratorio
-# y un certificado firmado por ella, generados en este nodo. Sustituir los
-# placeholders y descomentar. OpenSSL 3 (RHEL 9) copia el SAN del CSR con
-# -copy_extensions copy. Los permisos se aplican más abajo, en PERMISOS FINALES.
+# y un certificado firmado por ella, generados en este nodo. Sustituir
+# <host-fqdn> y <lb-fqdn> y descomentar. OpenSSL 3 (RHEL 9) copia el SAN del
+# CSR con -copy_extensions copy. Los permisos se aplican más abajo, en
+# PERMISOS FINALES.
 
 # openssl req -x509 -newkey rsa:4096 -sha256 -days 365 -nodes \
 #   -keyout /opt/vault/tls/vault-ca-key.pem \
@@ -83,8 +88,8 @@ ln -sf /usr/local/bin/vault /usr/bin/vault
 # openssl req -newkey rsa:4096 -sha256 -nodes \
 #   -keyout /opt/vault/tls/vault-key.pem \
 #   -out /tmp/vault.csr \
-#   -subj "/CN=<public-ip>" \
-#   -addext "subjectAltName=IP:<private-ip>,IP:<public-ip>,IP:127.0.0.1"
+#   -subj "/CN=<host-fqdn>" \
+#   -addext "subjectAltName=DNS:<host-fqdn>,DNS:<lb-fqdn>,IP:127.0.0.1"
 #
 # openssl x509 -req -in /tmp/vault.csr \
 #   -CA /opt/vault/tls/vault-ca.pem \
@@ -105,7 +110,8 @@ ln -sf /usr/local/bin/vault /usr/bin/vault
 # El listener en 0.0.0.0 escucha en todas las interfaces; cluster_addr y api_addr
 # solo son las direcciones que Vault anuncia. Sustituir <private-ip> y <public-ip>.
 # En un cluster de 3 nodos se añadirían bloques retry_join y api_addr pasaría a ser el VIP.
-# El certificado TLS debe incluir en SAN <private-ip>, <public-ip> y 127.0.0.1.
+# El certificado TLS debe incluir en SAN 127.0.0.1, el FQDN de este host y el FQDN
+# del balanceador (no las IPs, salvo en un laboratorio sin DNS).
 
 cat << 'EOFHCL' > /etc/vault.d/vault.hcl
 ui = true
@@ -130,6 +136,50 @@ listener "tcp" {
 
 license_path = "/opt/vault/vault.hclic"
 EOFHCL
+
+# Cluster de 3 nodos (comentado). En cada nodo: node_id y cluster_addr propios
+# (FQDN de ese host); api_addr es el FQDN del balanceador. El SAN del cert
+# incluye 127.0.0.1, <host-fqdn> y <lb-fqdn>.
+#
+# cat << 'EOFHCL' > /etc/vault.d/vault.hcl
+# ui = true
+# disable_mlock = true
+#
+# storage "raft" {
+#   path    = "/apps/vault/data"
+#   node_id = "vault-node-1"
+#
+#   retry_join {
+#     leader_api_addr       = "https://<node-1-fqdn>:8200"
+#     leader_tls_servername = "<node-1-fqdn>"
+#     leader_ca_cert_file   = "/opt/vault/tls/vault-ca.pem"
+#   }
+#   retry_join {
+#     leader_api_addr       = "https://<node-2-fqdn>:8200"
+#     leader_tls_servername = "<node-2-fqdn>"
+#     leader_ca_cert_file   = "/opt/vault/tls/vault-ca.pem"
+#   }
+#   retry_join {
+#     leader_api_addr       = "https://<node-3-fqdn>:8200"
+#     leader_tls_servername = "<node-3-fqdn>"
+#     leader_ca_cert_file   = "/opt/vault/tls/vault-ca.pem"
+#   }
+# }
+#
+# cluster_addr = "https://<host-fqdn>:8201"
+# api_addr     = "https://<lb-fqdn>:8200"
+#
+# listener "tcp" {
+#   address            = "0.0.0.0:8200"
+#   cluster_address    = "0.0.0.0:8201"
+#   tls_disable        = false
+#   tls_cert_file      = "/opt/vault/tls/vault-cert.pem"
+#   tls_key_file       = "/opt/vault/tls/vault-key.pem"
+#   tls_client_ca_file = "/opt/vault/tls/vault-ca.pem"
+# }
+#
+# license_path = "/opt/vault/vault.hclic"
+# EOFHCL
 
 # ============================================================
 # SERVICIO SYSTEMD

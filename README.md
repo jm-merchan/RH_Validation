@@ -55,7 +55,7 @@ Esos tres comandos están también en los gists. La licencia debe ser compatible
 
 En la instancia, como root, pega el gist HTTP o el TLS. El `user_data` ya deja `wget`, `unzip`, `firewalld` y `/apps/vault/data` montado.
 
-Tras HTTP, se puede pasar a HTTPS generando CA + cert (SAN: IP privada, IP pública, `127.0.0.1`), cambiando `vault.hcl` a `https://` y `tls_disable = false`, y reiniciando. No hace falta volver a `vault operator init`; sí un `unseal`.
+Tras HTTP, se puede pasar a HTTPS generando CA + cert. El SAN del certificado debe llevar `127.0.0.1`, el FQDN del host y el FQDN del balanceador (en este laboratorio, sin DNS, se usaron IPs). Cambiar `vault.hcl` a `https://` y `tls_disable = false`, y reiniciar. No hace falta volver a `vault operator init`; sí un `unseal`.
 
 CLI con TLS:
 

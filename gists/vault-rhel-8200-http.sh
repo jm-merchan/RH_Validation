@@ -92,6 +92,40 @@ listener "tcp" {
 license_path = "/opt/vault/vault.hclic"
 EOFHCL
 
+# Cluster de 3 nodos (comentado). En cada nodo: node_id y cluster_addr propios;
+# api_addr es el VIP/FQDN del balanceador. retry_join apunta a los tres peers.
+#
+# cat << 'EOFHCL' > /etc/vault.d/vault.hcl
+# ui = true
+# disable_mlock = true
+#
+# storage "raft" {
+#   path    = "/apps/vault/data"
+#   node_id = "vault-node-1"
+#
+#   retry_join {
+#     leader_api_addr = "http://<node-1-fqdn>:8200"
+#   }
+#   retry_join {
+#     leader_api_addr = "http://<node-2-fqdn>:8200"
+#   }
+#   retry_join {
+#     leader_api_addr = "http://<node-3-fqdn>:8200"
+#   }
+# }
+#
+# cluster_addr = "http://<host-fqdn>:8201"
+# api_addr     = "http://<lb-fqdn>:8200"
+#
+# listener "tcp" {
+#   address         = "0.0.0.0:8200"
+#   cluster_address = "0.0.0.0:8201"
+#   tls_disable     = true
+# }
+#
+# license_path = "/opt/vault/vault.hclic"
+# EOFHCL
+
 # ============================================================
 # SERVICIO SYSTEMD
 # ============================================================
