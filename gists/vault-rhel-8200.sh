@@ -24,7 +24,8 @@ sudo mkdir -p /etc/vault.d
 
 # Establecer permisos para directorio de datos
 sudo chown -R vault:vault /apps/vault/data
-sudo chmod -R 750 /apps/vault/data
+sudo chmod -R 755 /apps/vault/data
+sudo chmod -R 755 /opt/vault/
 
 # Establecer permisos para el directorio de configuración
 sudo chown root:root /etc/vault.d
@@ -50,7 +51,7 @@ unzip "vault_${VAULT_VERSION}+ent_linux_amd64.zip"
 
 # Licencia: previamente scp al home (p. ej. ~/vault.hclic). Hacer este paso
 # antes de arrancar Vault.
-sudo mkdir -p /opt/vault
+
 sudo install -o root -g vault -m 640 ~/vault.hclic /opt/vault/vault.hclic
 rm ~/vault.hclic
 

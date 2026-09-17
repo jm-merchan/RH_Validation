@@ -26,6 +26,7 @@ sudo mkdir -p /etc/vault.d
 # Establecer permisos para directorio de datos
 sudo chown -R vault:vault /apps/vault/data
 sudo chmod -R 750 /apps/vault/data
+sudo chmod -R 755 /opt/vault/
 
 # Establecer permisos para el directorio de configuración
 sudo chown root:root /etc/vault.d
